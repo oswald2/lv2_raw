@@ -76,6 +76,45 @@ pub unsafe fn lv2_atom_sequence_next(i: *const LV2AtomEvent) -> *mut LV2AtomEven
     ptr as *mut LV2AtomEvent
 }
 
+pub struct LV2AtomSequenceIterator {
+    sequence: *const LV2AtomSequence,
+    it: *mut LV2AtomEvent
+}
+
+impl LV2AtomSequenceIterator {
+    pub fn new(seq: *const LV2AtomSequence) -> LV2AtomSequenceIterator { 
+        LV2AtomSequenceIterator { 
+            sequence: seq,
+            it: 0 as *mut LV2AtomEvent 
+        }
+    }
+}
+
+impl Iterator for LV2AtomSequenceIterator {
+    type Item = *const LV2AtomEvent;
+
+    fn next(&mut self) -> Option<*const LV2AtomEvent> {
+        unsafe {
+            let ref body = (*self.sequence).body;
+            if self.it.is_null() {
+                self.it = lv2_atom_sequence_begin(body);
+                if lv2_atom_sequence_is_end(body, (*self.sequence).atom.size, self.it) {
+                    None
+                } else {
+                    Some(self.it)
+                }
+            } else {
+                self.it = lv2_atom_sequence_next(self.it);
+                if lv2_atom_sequence_is_end(body, (*self.sequence).atom.size, self.it) {
+                    None
+                } else {
+                    Some(self.it)
+                }
+            }
+        }
+    }
+}
+
 /**
    Clear all events from `sequence`.
 
