@@ -20,6 +20,7 @@
 //
 
 use std::mem::transmute;
+use std::slice::*;
 use utils::*;
  
 
@@ -248,6 +249,14 @@ impl LV2AtomEvent {
 
     pub fn time_as_beats(&self) -> f64 {
         unsafe { transmute::<i64, f64>(self.time_in_frames) }
+    }
+
+    pub fn data(&self) -> &[u8] {
+        unsafe {
+            let msg_raw = (self as *const LV2AtomEvent).offset(1) as *const u8;
+            
+            from_raw_parts(msg_raw, self.body.size as usize)
+        }
     }
 }
 
