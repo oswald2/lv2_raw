@@ -78,14 +78,14 @@ pub unsafe fn lv2_atom_sequence_next(i: *const LV2AtomEvent) -> *mut LV2AtomEven
 
 pub struct LV2AtomSequenceIterator {
     sequence: *const LV2AtomSequence,
-    it: *mut LV2AtomEvent
+    it: *const LV2AtomEvent
 }
 
 impl LV2AtomSequenceIterator {
     pub fn new(seq: *const LV2AtomSequence) -> LV2AtomSequenceIterator { 
         LV2AtomSequenceIterator { 
             sequence: seq,
-            it: 0 as *mut LV2AtomEvent 
+            it: 0 as *const LV2AtomEvent 
         }
     }
 }
