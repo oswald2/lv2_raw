@@ -320,15 +320,7 @@ impl LV2AtomSequence {
     }
 }
 
-impl IntoIterator for LV2AtomSequence {
-    type Item = *const LV2AtomEvent;
-    type IntoIter = LV2AtomSequenceIterator;
 
-    fn into_iter(self) -> Self::IntoIter {
-        LV2AtomSequenceIterator::new(&self)
-    }
-
-}
 
 
 

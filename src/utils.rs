@@ -76,13 +76,13 @@ pub unsafe fn lv2_atom_sequence_next(i: *const LV2AtomEvent) -> *mut LV2AtomEven
     ptr as *mut LV2AtomEvent
 }
 
-pub struct LV2AtomSequenceIterator {
-    sequence: *const LV2AtomSequence,
+pub struct LV2AtomSequenceIterator<'a> {
+    sequence: &'a LV2AtomSequence,
     it: *const LV2AtomEvent
 }
 
-impl LV2AtomSequenceIterator {
-    pub fn new(seq: *const LV2AtomSequence) -> LV2AtomSequenceIterator { 
+impl<'a> LV2AtomSequenceIterator<'a> {
+    pub fn new(seq: &'a LV2AtomSequence) -> LV2AtomSequenceIterator { 
         LV2AtomSequenceIterator { 
             sequence: seq,
             it: 0 as *const LV2AtomEvent 
@@ -90,10 +90,10 @@ impl LV2AtomSequenceIterator {
     }
 }
 
-impl Iterator for LV2AtomSequenceIterator {
-    type Item = *const LV2AtomEvent;
+impl<'a> Iterator for LV2AtomSequenceIterator<'a> {
+    type Item = &'a LV2AtomEvent;
 
-    fn next(&mut self) -> Option<*const LV2AtomEvent> {
+    fn next(&mut self) -> Option<&'a LV2AtomEvent> {
         unsafe {
             let ref body = (*self.sequence).body;
             if self.it.is_null() {
@@ -101,14 +101,14 @@ impl Iterator for LV2AtomSequenceIterator {
                 if lv2_atom_sequence_is_end(body, (*self.sequence).atom.size, self.it) {
                     None
                 } else {
-                    Some(self.it)
+                    self.it.as_ref()
                 }
             } else {
                 self.it = lv2_atom_sequence_next(self.it);
                 if lv2_atom_sequence_is_end(body, (*self.sequence).atom.size, self.it) {
                     None
                 } else {
-                    Some(self.it)
+                    self.it.as_ref()
                 }
             }
         }
