@@ -98,18 +98,13 @@ impl<'a> Iterator for LV2AtomSequenceIterator<'a> {
             let ref body = (*self.sequence).body;
             if self.it.is_null() {
                 self.it = lv2_atom_sequence_begin(body);
-                if lv2_atom_sequence_is_end(body, (*self.sequence).atom.size, self.it) {
-                    None
-                } else {
-                    self.it.as_ref()
-                }
             } else {
                 self.it = lv2_atom_sequence_next(self.it);
-                if lv2_atom_sequence_is_end(body, (*self.sequence).atom.size, self.it) {
-                    None
-                } else {
-                    self.it.as_ref()
-                }
+            }
+            if lv2_atom_sequence_is_end(body, (*self.sequence).atom.size, self.it) {
+                None
+            } else {
+                self.it.as_ref()
             }
         }
     }
@@ -181,7 +176,7 @@ pub struct LV2AtomObjectQuery {
     /**< Key to query (input set by user) */
     pub key: u32,
     /**< Found value (output set by query function) */
-    pub value: *mut *mut LV2Atom
+    pub value: *mut *const LV2Atom
 }
 
 /**
@@ -250,11 +245,6 @@ pub unsafe fn lv2_atom_object_query(obj: *mut LV2AtomObject,
 }
 
 
-pub struct ObjectHelper {
-    pub key: u32,
-    pub atom: *mut *mut LV2Atom
-}
-
 /**
    Variable argument version of lv2_atom_object_query().
 
@@ -274,13 +264,13 @@ pub struct ObjectHelper {
                        0);
    @endcode
 */
-pub unsafe fn lv2_atom_object_get(body: *mut LV2AtomObject, query: &[ObjectHelper]) -> i32 {
+pub unsafe fn lv2_atom_object_get(body: *mut LV2AtomObject, query: &[LV2AtomObjectQuery]) -> i32 {
     
     let mut matches = 0;
     let mut n_queries = 0;
 
     for it in query {
-        if it.atom.is_null() {
+        if it.value.is_null() {
             return -1;
         }
         n_queries += 1;
@@ -292,8 +282,8 @@ pub unsafe fn lv2_atom_object_get(body: *mut LV2AtomObject, query: &[ObjectHelpe
                 for it in query {
                     let qkey = it.key;
 
-                    if qkey == (*prop).key && (*(it.atom)).is_null() {
-                        *(it.atom) = &mut (*prop).value;
+                    if qkey == (*prop).key && (*(it.value)).is_null() {
+                        *(it.value) = &mut (*prop).value;
                         matches += 1;
                         if matches == n_queries {
                             return matches > 0;
@@ -309,3 +299,84 @@ pub unsafe fn lv2_atom_object_get(body: *mut LV2AtomObject, query: &[ObjectHelpe
 
     return matches;
 }
+
+
+
+pub struct LV2AtomObjectIterator<'a> {
+    object: &'a LV2AtomObject,
+    it: *const LV2AtomPropertyBody
+}
+
+impl<'a> LV2AtomObjectIterator<'a> {
+    pub fn new(obj: &'a LV2AtomObject) -> LV2AtomObjectIterator { 
+        LV2AtomObjectIterator { 
+            object: obj,
+            it: 0 as *const LV2AtomPropertyBody 
+        }
+    }
+}
+
+impl<'a> Iterator for LV2AtomObjectIterator<'a> {
+    type Item = &'a LV2AtomPropertyBody;
+
+    fn next(&mut self) -> Option<&'a LV2AtomPropertyBody> {
+        unsafe {
+            let ref body = (*self.object).body;
+            if self.it.is_null() {
+                self.it = lv2_atom_object_begin(body);
+            } else {
+                self.it = lv2_atom_object_next(self.it);
+            }
+            if lv2_atom_object_is_end(body, (*self.object).atom.size, self.it) {
+                None
+            } else {
+                self.it.as_ref()
+            }
+        }
+    }
+}
+
+
+pub struct LV2AtomObjectIteratorQuery<'a> {
+    iter: &'a LV2AtomObjectIterator<'a>,
+    query: &'a [LV2AtomObjectQuery]
+}
+
+
+impl<'a> LV2AtomObjectIteratorQuery<'a> {
+
+    pub fn query(b: &'a LV2AtomObjectIterator, q: &'a [LV2AtomObjectQuery]) -> LV2AtomObjectIteratorQuery<'a> {
+        LV2AtomObjectIteratorQuery { iter: b, query: q }
+    }
+}
+
+pub struct LV2QueryResult<'a> {
+    key: u32,
+    atom: &'a LV2Atom
+}
+
+
+impl<'a> Iterator for LV2AtomObjectIteratorQuery<'a> {
+    type Item = LV2QueryResult<'a>;
+
+    fn next(&mut self) -> Option<LV2QueryResult> {
+        let iterator = LV2AtomObjectIterator::new(self.iter.object);
+
+        for x in iterator {
+            for it in self.query {
+                unsafe {
+                    let qkey = it.key;
+
+                    if qkey == x.key && (*(it.value)).is_null() {
+                        //*(it.value) = &x.value;
+                        return Some(LV2QueryResult { key: qkey, atom: &x.value });
+                    }
+                }
+            }
+        }
+        None
+    }
+    
+}
+
+

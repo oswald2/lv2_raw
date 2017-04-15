@@ -60,7 +60,10 @@ pub static LV2_ATOM__SUPPORTS      : &'static [u8] = b"http://lv2plug.in/ns/ext/
 pub static LV2_ATOM__TIMEUNIT      : &'static [u8] = b"http://lv2plug.in/ns/ext/atom#timeUnit\0";
 
 
-
+pub enum LV2AtomVariant {
+    LV2VarAtomInt { atom: LV2AtomInt },
+    LV2VarAtomFloat { atom: LV2AtomFloat }
+}
 
 
 /** The header of an atom:Atom. */
@@ -228,8 +231,6 @@ impl LV2AtomObject {
         }
     }
 }
-
-
 
 
 
